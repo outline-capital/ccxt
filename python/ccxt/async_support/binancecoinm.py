@@ -19,15 +19,6 @@ class binancecoinm(binance):
                     'https://binance-docs.github.io/apidocs/spot/en',
                 ],
             },
-            'has': {
-                'CORS': None,
-                'spot': False,
-                'margin': False,
-                'swap': True,
-                'future': True,
-                'option': None,
-                'createStopMarketOrder': True,
-            },
             'options': {
                 'defaultType': 'delivery',
                 'leverageBrackets': None,

@@ -28,7 +28,6 @@ class ftxus(ftx):
                 'fetchFundingRates': False,
                 'fetchIndexOHLCV': False,
                 'fetchMarkOHLCV': False,
-                'fetchOpenInterestHistory': False,
                 'fetchPremiumIndexOHLCV': False,
             },
             'urls': {
@@ -36,31 +35,5 @@ class ftxus(ftx):
                 'www': 'https://ftx.us/',
                 'docs': 'https://docs.ftx.us/',
                 'fees': 'https://help.ftx.us/hc/en-us/articles/360043579273-Fees',
-            },
-            'fees': {
-                'trading': {
-                    'tierBased': True,
-                    'percentage': True,
-                    'maker': self.parse_number('0.001'),
-                    'taker': self.parse_number('0.002'),
-                    'tiers': {
-                        'taker': [
-                            [self.parse_number('0'), self.parse_number('0.002')],
-                            [self.parse_number('100000'), self.parse_number('0.0018')],
-                            [self.parse_number('1000000'), self.parse_number('0.0015')],
-                            [self.parse_number('5000000'), self.parse_number('0.001')],
-                            [self.parse_number('10000000'), self.parse_number('0.0008')],
-                            [self.parse_number('15000000'), self.parse_number('0.0006')],
-                        ],
-                        'maker': [
-                            [self.parse_number('0'), self.parse_number('0.001')],
-                            [self.parse_number('100000'), self.parse_number('0.0006')],
-                            [self.parse_number('1000000'), self.parse_number('0.0005')],
-                            [self.parse_number('5000000'), self.parse_number('0.0004')],
-                            [self.parse_number('10000000'), self.parse_number('0.0002')],
-                            [self.parse_number('15000000'), self.parse_number('0.0')],
-                        ],
-                    },
-                },
             },
         })

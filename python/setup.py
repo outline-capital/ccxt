@@ -79,7 +79,7 @@ setup(
     packages=find_packages(exclude=['ccxt.async_support*'] if is_python_2 else []),
 
     install_requires=[
-        'setuptools>=60.9.0',
+        'setuptools>=38.5.1',
         'certifi>=2018.1.18',
         'requests>=2.18.4',
         'cryptography>=2.6.1'
@@ -89,7 +89,7 @@ setup(
         ':python_version>="3.5.2"': [
             'aiohttp>=3.8',
             'aiodns>=1.1.1',
-            'yarl>=1.7.2',
+            'yarl==1.7.2',
         ],
         'qa': [
             'flake8==3.7.9',

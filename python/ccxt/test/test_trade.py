@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
-
-
-import numbers  # noqa E402
+import numbers  # noqa: E402
+try:
+    basestring  # basestring was removed in Python 3
+except NameError:
+    basestring = str
 
 
 def test_trade(exchange, trade, symbol, now):
@@ -42,7 +43,7 @@ def test_trade(exchange, trade, symbol, now):
             assert('cost' in fee) and ('currency' in fee)
 
     id = trade['id']
-    assert(id is None) or (isinstance(id, str))
+    assert(id is None) or (isinstance(id, basestring))
     timestamp = trade['timestamp']
     assert isinstance(timestamp, numbers.Real) or timestamp is None
     if timestamp:
@@ -53,9 +54,9 @@ def test_trade(exchange, trade, symbol, now):
 
     assert trade['datetime'] == exchange.iso8601(timestamp)
     assert trade['symbol'] == symbol, 'trade symbol is not equal to requested symbol: trade: ' + trade['symbol'] + ' requested: ' + symbol
-    assert trade['type'] is None or isinstance(trade['type'], str)
+    assert trade['type'] is None or isinstance(trade['type'], basestring)
     assert trade['side'] is None or trade['side'] == 'buy' or trade['side'] == 'sell', 'unexpected trade side ' + trade['side']
-    assert trade['order'] is None or isinstance(trade['order'], str)
+    assert trade['order'] is None or isinstance(trade['order'], basestring)
     assert isinstance(trade['price'], numbers.Real), 'trade.price is not a number'
     assert trade['price'] > 0
     assert isinstance(trade['amount'], numbers.Real), 'trade.amount is not a number'

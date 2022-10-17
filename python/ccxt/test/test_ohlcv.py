@@ -1,8 +1,13 @@
-# -*- coding: utf-8 -*-
+import numbers  # noqa: E402
+try:
+    basestring  # basestring was removed in Python 3
+except NameError:
+    basestring = str
+
+# ----------------------------------------------------------------------------
 
 
-import numbers  # noqa E402
-
+#  ---------------------------------------------------------------------------
 
 def test_ohlcv(exchange, ohlcv, symbol, now):
 

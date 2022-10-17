@@ -1,15 +1,16 @@
-# -*- coding: utf-8 -*-
-
-
-import numbers  # noqa E402
+import numbers  # noqa: E402
+try:
+    basestring  # basestring was removed in Python 3
+except NameError:
+    basestring = str
 
 
 def test_order(exchange, order, symbol, now):
     assert order
     assert 'id' in order
-    assert isinstance(order['id'], str)
+    assert isinstance(order['id'], basestring)
     assert 'clientOrderId' in order
-    assert(order['clientOrderId'] is None) or (isinstance(order['clientOrderId'], str))
+    assert(order['clientOrderId'] is None) or (isinstance(order['clientOrderId'], basestring))
     assert 'timestamp' in order
     assert isinstance(order['timestamp'], numbers.Real)
     assert order['timestamp'] > 1230940800000  # 03 Jan 2009 - first block
@@ -22,9 +23,9 @@ def test_order(exchange, order, symbol, now):
     assert 'symbol' in order
     assert order['symbol'] == symbol
     assert 'type' in order
-    assert(order['type'] is None) or (isinstance(order['type'], str))
+    assert(order['type'] is None) or (isinstance(order['type'], basestring))
     assert 'timeInForce' in order
-    assert(order['timeInForce'] is None) or (isinstance(order['timeInForce'], str))
+    assert(order['timeInForce'] is None) or (isinstance(order['timeInForce'], basestring))
     assert 'side' in order
     assert(order['side'] == 'buy') or (order['side'] == 'sell')
     assert 'price' in order
@@ -54,7 +55,7 @@ def test_order(exchange, order, symbol, now):
     if fee:
         assert isinstance(fee['cost'], numbers.Real)
         if fee['cost'] != 0:
-            assert isinstance(fee['currency'], str)
+            assert isinstance(fee['currency'], basestring)
 
     assert 'info' in order
     assert order['info']

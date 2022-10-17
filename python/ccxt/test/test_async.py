@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import time  # noqa: F401
+from os import _exit
 from traceback import format_tb
 
 # ------------------------------------------------------------------------------
@@ -53,8 +54,6 @@ exchanges = {}
 # ------------------------------------------------------------------------------
 
 path = os.path.dirname(ccxt.__file__)
-print(os.getcwd(), path)
-print(sys.argv)
 if 'site-packages' in os.path.dirname(ccxt.__file__):
     raise Exception("You are running test_async.py/test.py against a globally-installed version of the library! It was previously installed into your site-packages folder by pip or pip3. To ensure testing against the local folder uninstall it first with pip uninstall ccxt or pip3 uninstall ccxt")
 
@@ -112,7 +111,7 @@ def dump_error(*args):
 
 def handle_all_unhandled_exceptions(type, value, traceback):
     dump_error(yellow(type), yellow(value), '\n\n' + yellow('\n'.join(format_tb(traceback))))
-    exit(1)  # unrecoverable crash
+    _exit(1)  # unrecoverable crash
 
 
 sys.excepthook = handle_all_unhandled_exceptions
@@ -121,12 +120,11 @@ sys.excepthook = handle_all_unhandled_exceptions
 
 
 async def test_order_book(exchange, symbol):
-    method = 'fetchOrderBook'
-    if exchange.has[method]:
+    if exchange.has['fetchOrderBook']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
         # dump(green(exchange.id), green(symbol), 'fetching order book...')
-        orderbook = await getattr(exchange, method)(symbol)
+        orderbook = await exchange.fetch_order_book(symbol)
         dump(
             green(exchange.id),
             green(symbol),
@@ -137,13 +135,12 @@ async def test_order_book(exchange, symbol):
             'ask: ' + str(orderbook['asks'][0][0] if len(orderbook['asks']) else 'N/A'),
             'askVolume: ' + str(orderbook['asks'][0][1] if len(orderbook['asks']) else 'N/A'))
     else:
-        dump(yellow(exchange.id), method + '() is not supported')
+        dump(yellow(exchange.id), 'fetch_order_book() supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_ohlcvs(exchange, symbol):
-    method = 'fetchOHLCV'
     ignored_exchanges = [
         'cex',  # CEX can return historical candles for a certain date only
         'okex',  # okex fetchOHLCV counts "limit" candles from current time backwards
@@ -151,39 +148,37 @@ async def test_ohlcvs(exchange, symbol):
     ]
     if exchange.id in ignored_exchanges:
         return
-    if exchange.has[method]:
+    if exchange.has['fetchOHLCV']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
         timeframes = exchange.timeframes if exchange.timeframes else {'1d': '1d'}
-        exchange_has_one_minute_timeframe = '1m' in timeframes
-        timeframe = '1m' if exchange_has_one_minute_timeframe else list(timeframes.keys())[0]
+        timeframe = list(timeframes.keys())[0]
         limit = 10
         duration = exchange.parse_timeframe(timeframe)
         since = exchange.milliseconds() - duration * limit * 1000 - 1000
-        ohlcvs = await getattr(exchange, method)(symbol, timeframe, since, limit)
+        ohlcvs = await exchange.fetch_ohlcv(symbol, timeframe, since, limit)
         for ohlcv in ohlcvs:
             test_ohlcv(exchange, ohlcv, symbol, int(time.time() * 1000))
         dump(green(exchange.id), 'fetched', green(len(ohlcvs)), 'OHLCVs')
     else:
-        dump(yellow(exchange.id), method + '() is not supported')
+        dump(yellow(exchange.id), 'fetching OHLCV not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_tickers(exchange, symbol):
-    method = 'fetchTickers'
     ignored_exchanges = [
         'digifinex',  # requires apiKey to call v2 tickers
     ]
     if exchange.id in ignored_exchanges:
         return
-    if exchange.has[method]:
+    if exchange.has['fetchTickers']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
         tickers = None
         try:
             # dump(green(exchange.id), 'fetching all tickers at once...')
-            tickers = await getattr(exchange, method)()
+            tickers = await exchange.fetch_tickers()
             dump(green(exchange.id), 'fetched all', green(len(list(tickers.keys()))), 'tickers')
         except Exception as e:
             dump(green(exchange.id), 'failed to fetch all tickers, fetching multiple tickers at once...')
@@ -233,16 +228,15 @@ async def test_l2_order_books_async(exchange):
 
 
 async def test_ticker(exchange, symbol):
-    method = 'fetchTicker'
     ignored_exchanges = [
         'digifinex',  # requires apiKey to call v2 tickers
     ]
     if exchange.id in ignored_exchanges:
         return
-    if exchange.has[method]:
+    if exchange.has['fetchTicker']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
-        ticker = await getattr(exchange, method)(symbol)
+        ticker = await exchange.fetch_ticker(symbol)
         dump(
             green(exchange.id),
             green(symbol),
@@ -254,36 +248,34 @@ async def test_ticker(exchange, symbol):
             'ask: ' + str(ticker['ask']),
             'volume: ' + str(ticker['quoteVolume']))
     else:
-        dump(green(exchange.id), green(symbol), method + '() is not supported')
+        dump(green(exchange.id), green(symbol), 'fetch_ticker() not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_trades(exchange, symbol):
-    method = 'fetchTrades'
-    if exchange.has[method]:
+    if exchange.has['fetchTrades']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
         # dump(green(exchange.id), green(symbol), 'fetching trades...')
-        trades = await getattr(exchange, method)(symbol)
+        trades = await exchange.fetch_trades(symbol)
         if trades:
             test_trade(exchange, trades[0], symbol, int(time.time() * 1000))
         dump(green(exchange.id), green(symbol), 'fetched', green(len(trades)), 'trades')
     else:
-        dump(green(exchange.id), green(symbol), method + '() is not supported')
+        dump(green(exchange.id), green(symbol), 'fetch_trades() not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_orders(exchange, symbol):
-    method = 'fetchOrders'
-    if exchange.has[method]:
+    if exchange.has['fetchOrders']:
         skipped_exchanges = [
             'bitmart',
             'rightbtc',
         ]
         if exchange.id in skipped_exchanges:
-            dump(green(exchange.id), green(symbol), method + '() skipped')
+            dump(green(exchange.id), green(symbol), 'fetch_orders() skipped')
             return
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
@@ -293,100 +285,74 @@ async def test_orders(exchange, symbol):
             test_order(exchange, order, symbol, int(time.time() * 1000))
         dump(green(exchange.id), green(symbol), 'fetched', green(len(orders)), 'orders')
     else:
-        dump(green(exchange.id), green(symbol), method + '() is not supported')
+        dump(green(exchange.id), green(symbol), 'fetch_orders() not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_positions(exchange, symbol):
-    method = 'fetchPositions'
-    if exchange.has[method]:
+    if exchange.has['fetchPositions']:
         skipped_exchanges = [
         ]
         if exchange.id in skipped_exchanges:
-            dump(green(exchange.id), green(symbol), method + '() skipped')
+            dump(green(exchange.id), green(symbol), 'fetch_positions() skipped')
             return
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
-        # without symbol
-        dump(green(exchange.id), 'fetching positions...')
-        positions = await getattr(exchange, method)()
-        for position in positions:
-            test_position(exchange, position, None, int(time.time() * 1000))
-        dump(green(exchange.id), 'fetched', green(len(positions)), 'positions')
-
-        # with symbol
-        dump(green(exchange.id), green(symbol), 'fetching positions...')
-        positions = await getattr(exchange, method)([symbol])
+        # dump(green(exchange.id), green(symbol), 'fetching positions...')
+        positions = await exchange.fetch_positions()
         for position in positions:
             test_position(exchange, position, symbol, int(time.time() * 1000))
         dump(green(exchange.id), green(symbol), 'fetched', green(len(positions)), 'positions')
     else:
-        dump(green(exchange.id), green(symbol), method + '() is not supported')
+        dump(green(exchange.id), green(symbol), 'fetch_positions() not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_closed_orders(exchange, symbol):
-    method = 'fetchClosedOrders'
-    if exchange.has[method]:
+    if exchange.has['fetchClosedOrders']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
         # dump(green(exchange.id), green(symbol), 'fetching orders...')
-        orders = await getattr(exchange, method)(symbol)
+        orders = await exchange.fetch_closed_orders(symbol)
         for order in orders:
             test_order(exchange, order, symbol, int(time.time() * 1000))
             assert order['status'] == 'closed' or order['status'] == 'canceled'
         dump(green(exchange.id), green(symbol), 'fetched', green(len(orders)), 'closed orders')
     else:
-        dump(green(exchange.id), green(symbol), method + '() is not supported')
+        dump(green(exchange.id), green(symbol), 'fetch_closed_orders() not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_open_orders(exchange, symbol):
-    method = 'fetchOpenOrders'
-    if exchange.has[method]:
+    if exchange.has['fetchOpenOrders']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
         # dump(green(exchange.id), green(symbol), 'fetching orders...')
-        orders = await getattr(exchange, method)(symbol)
+        orders = await exchange.fetch_open_orders(symbol)
         for order in orders:
             test_order(exchange, order, symbol, int(time.time() * 1000))
             assert order['status'] == 'open'
         dump(green(exchange.id), green(symbol), 'fetched', green(len(orders)), 'open orders')
     else:
-        dump(green(exchange.id), green(symbol), method + '() is not supported')
+        dump(green(exchange.id), green(symbol), 'fetch_open_orders() not supported')
 
 # ------------------------------------------------------------------------------
 
 
 async def test_transactions(exchange, code):
-    method = 'fetchTransactions'
-    if exchange.has[method]:
+    if exchange.has['fetchTransactions']:
         delay = int(exchange.rateLimit / 1000)
         await asyncio.sleep(delay)
 
-        transactions = await getattr(exchange, method)(code)
+        transactions = await exchange.fetch_transactions(code)
         for transaction in transactions:
             test_transaction(exchange, transaction, code, int(time.time() * 1000))
         dump(green(exchange.id), green(code), 'fetched', green(len(transactions)), 'transactions')
     else:
-        dump(green(exchange.id), green(code), method + '() is not supported')
-
-# ------------------------------------------------------------------------------
-
-
-async def test_balance(exchange):
-    method = 'fetchBalance'
-    if exchange.has[method]:
-        delay = int(exchange.rateLimit / 1000)
-        await asyncio.sleep(delay)
-
-        await getattr(exchange, method)()
-        dump(green(exchange.id), 'fetched balance')
-    else:
-        dump(green(exchange.id), method + '() is not supported')
+        dump(green(exchange.id), green(code), 'fetch_transactions() not supported')
 
 # ------------------------------------------------------------------------------
 
@@ -394,39 +360,26 @@ async def test_balance(exchange):
 async def test_symbol(exchange, symbol, code):
     dump(green('SYMBOL: ' + symbol))
     dump(green('CODE: ' + code))
-    dump('Testing fetch_ticker:' + symbol)
     await test_ticker(exchange, symbol)
-    dump('Testing fetch_tickers:' + symbol)
     await test_tickers(exchange, symbol)
-    dump('Testing fetch_ohlcv:' + symbol)
     await test_ohlcvs(exchange, symbol)
 
     if exchange.id == 'coinmarketcap':
         response = await exchange.fetchGlobal()
         dump(green(response))
     else:
-        dump('Testing fetch_order_book:' + symbol)
         await test_order_book(exchange, symbol)
-        dump('Testing fetch_trades:' + symbol)
         await test_trades(exchange, symbol)
         if (not hasattr(exchange, 'apiKey') or (len(exchange.apiKey) < 1)):
             return
-        method = 'signIn'
-        if exchange.has[method]:
-            dump('Testing ' + method + '()')
-            await getattr(exchange, method)()
-        dump('Testing fetch_orders:' + symbol)
+        if exchange.has['signIn']:
+            await exchange.sign_in()
         await test_orders(exchange, symbol)
-        dump('Testing fetch_open_orders:' + symbol)
         await test_open_orders(exchange, symbol)
-        dump('Testing fetch_closed_orders:' + symbol)
         await test_closed_orders(exchange, symbol)
-        dump('Testing fetch_transactions:' + code)
         await test_transactions(exchange, code)
-        dump('Testing fetch_balance')
-        await test_balance(exchange)
-        dump('Testing fetch_positions:' + symbol)
-        await test_positions(exchange, symbol)
+        await exchange.fetch_balance()
+        dump(green(exchange.id), 'fetched balance')
 
 # ------------------------------------------------------------------------------
 
@@ -443,7 +396,6 @@ def get_test_symbol(exchange, symbols):
             active = exchange.safe_value(market, 'active')
             if active or (active is None):
                 symbol = s
-                break
     return symbol
 
 
@@ -505,7 +457,6 @@ async def test_exchange(exchange, symbol=None):
             'BTC/JPY',
             'LTC/BTC',
             'USD/SLL',
-            'EUR/USD',
         ])
 
         if symbol is None:
@@ -599,6 +550,7 @@ async def try_all_proxies(exchange, proxies=['']):
 proxies = [
     '',
     'https://cors-anywhere.herokuapp.com/',
+    # 'https://crossorigin.me/',
 ]
 
 # prefer local testing keys to global keys
@@ -618,7 +570,7 @@ for id in ccxt.exchanges:
     exchange = getattr(ccxt, id)
     exchange_config = {'verbose': argv.verbose}
     if sys.version_info[0] < 3:
-        exchange_config.update()
+        exchange_config.update({'enableRateLimit': True})
     if id in config:
         exchange_config = ccxt.Exchange.deep_extend(exchange_config, config[id])
     exchanges[id] = exchange(exchange_config)
